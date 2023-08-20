@@ -5,6 +5,7 @@ const User = require('./models/User.js');
 var cookieParser = require('cookie-parser')
 const dotenv = require('dotenv');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt')
 
 
 const app = express();
@@ -16,6 +17,7 @@ app.use(cookieParser());
 
 
 dotenv.config();
+const dbURL = `${process.env.DB_URI}`
 const port = 4000;
 secretOrPrivateKey = `${process.env.TOKEN_SECRET}`
 cookieToken = '';
@@ -32,6 +34,7 @@ const createToken = (email) => {
             if (err) {
                 reject(err);
             } else {
+                console.log('oia o tokennnnnnnnnnnnnnn');
                 console.log(token);
                 resolve(token);
             }
@@ -58,7 +61,7 @@ app.post('/register', async (req, res) => {
                 res.cookie('jwt', token, {
                     maxAge: 1200000
                 });
-                res.status(200).json({msg: 'token criado com sucesso!'});
+                res.status(200).json({msg: token});
             })
             .catch(error => {
                 console.error(error);
@@ -69,8 +72,39 @@ app.post('/register', async (req, res) => {
     }
 })
 
-mongoose.connect(process.env.DB_URI, {useUnifiedTopology: true })
+app.post('/login', async (req, res) => {
+    const {email, password} = req.body;
+    let user;
+    try {
+    user = await User.findOne({email: email})
+        if(user) {
+            console.log('usuario encontrado com sucesso', user);
+            const checkPassword = await bcrypt.compare(password, user.password);
+            if (!checkPassword) {
+                console.log('senha invalida');
+            } else {
+                console.log('logando');
+                createToken(user.email)
+                    .then(token => {
+                        res.cookie('jwt', token, {
+                            maxAge: 1200000
+                        })
+                        res.status(200).json({msg: token})
+                    })
+
+            }
+        } else {
+            console.log('usuario nao encontrado');
+        }
+    } catch (error) {
+        console.log(error);
+    }
+})
+
+
+mongoose.connect(dbURL, {useUnifiedTopology: true })
     .then((result) => {
+        console.log(process.env.DB_URI);
     app.listen(port, () => {
         console.log(`Server is running on: http://localhost:${port}/ `);
     })
