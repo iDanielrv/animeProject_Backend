@@ -89,7 +89,7 @@ app.post('/login', async (req, res) => {
                         res.cookie('jwt', token, {
                             maxAge: 1200000
                         })
-                        res.status(200).json({msg: token})
+                        res.status(200).json({token: token, email: user.email})
                     })
 
             }
